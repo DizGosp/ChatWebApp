@@ -25,8 +25,13 @@ namespace ChatWebApp.EF
        public DbSet<Messages> Message { get; set; }
 
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Rooms>().HasData(
+                new Rooms { RoomId = 1, Name = "Public", DateTimeCreated = DateTime.Now} 
+           );
+        }
 
 
-
-    }
+        }
 }

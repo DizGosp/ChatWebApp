@@ -57,7 +57,7 @@ namespace ChatWebApp.Controllers
             model.userId = us.UserId;
             model.LogUser = us.UserName;
             model.rows = _db.Message
-           .Where(n => n.RoomId == 6)
+           .Where(n => n.RoomId == 1)
            .Include(u => u.User)
            .Include(r => r.Room)
             .Select(n => new UserVM.Row
