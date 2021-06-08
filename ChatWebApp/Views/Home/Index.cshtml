@@ -1,0 +1,182 @@
+﻿@model ChatWebApp.ViewModels.UserVM
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+
+<h1 style="position:center; margin-left:35%; margin-top:5%; color:white;">Chat with friends:</h1>
+<div class="conteiner" style="margin-top:5%;">
+    <div id="right">
+        <div class="col-6">
+
+            <div class="col-6">
+                <div class="row">
+                    <h3>Online: </h3>
+                    <ul>
+
+                        @foreach (var item in ViewBag.number)
+                        {
+
+                            <li><label>@item</label></li>
+
+                        }
+                    </ul>
+                </div>
+
+            </div>
+
+        </div>
+        <hr />
+
+    </div>
+    <div id="left">
+        <div id="userinfo" class="row" style="text-align:center; margin-left:5%;">
+            <label for="username" style="text-align:center;"> Your username is:  <input type="text" class="form-control" id="username" name="username" value="@Model.LogUser" autocomplete="off" readonly /></label>
+
+            <button type="button" class="btn btn-block" onclick="SetUsername();">Join</button>
+        </div>
+
+        <div id="messagearea" class="row" style="display:none;text-align:center; margin-left:5%;">
+            <div>Joined as: <b><span id="username1">Not Set</span></b></div>
+            <hr />
+
+            <form class="form" id="myForm">
+                <div class="row">
+                    <div class="col-6">
+                        <ul id="messagesList"></ul>
+                    </div>
+                </div>
+                <hr />
+                <input type="text" id="message" name="message" autocomplete="off" />
+                <input type="hidden" value="@Model.userId" name="userId" />
+                <input type="hidden" value=6 name="roomID" />
+                <input type="hidden" value=@DateTime.Now name="date" />
+
+                <input type="button" id="sendButton" value="Send Message" />
+
+                 <input type="button" class="btn btn-block"  id="HistoryButton" value="History" />
+              
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<div id="historyBox">
+    <h3 style="position:center; margin-top:5%; margin-bottom:5%;">Public chat history: </h3>
+    @foreach (var item in Model.rows)
+    {
+
+        <div class="messBox">
+           <h3>User: @item.username</h3>
+           <h6>Date and time: @item.DateTimeMessage</h6>
+           <h4>Message: @item.message</h4>
+        </div>
+
+        <hr />
+    }
+    <button onclick="UnShowHistory()" class="btn btn-block" >Less</button>
+</div>
+
+
+
+
+<script src="~/js/signalr/dist/browser/signalr.js"></script>
+
+
+<script>
+
+    
+    var connection = new signalR.HubConnectionBuilder().withUrl("/Home/Index").build();
+
+    var username = "";
+
+    document.getElementById("sendButton").disabled = true;
+
+    connection.on("ReceiveMessage", function (user, message) {
+        var msg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        var encodedMsg = user + " says: " + msg;
+        var li = document.createElement("li");
+        li.textContent = encodedMsg;
+        document.getElementById("messagesList").appendChild(li);
+    });
+
+
+    connection.start().then(function () {
+
+        document.getElementById("sendButton").disabled = false;
+    }).catch(function (err) {
+        return console.error(err.toString());
+    });
+
+    document.getElementById("sendButton").addEventListener("click", function (event) {
+
+        var message = document.getElementById("message").value;
+
+        if (SaveToDB() == false) {
+            alert("Didn't save");
+        }
+
+
+        connection.invoke("SendMessage", username, message).then(function () {
+            document.getElementById("message").value = "";
+        }).catch(function (err) {
+            return console.error(err.toString());
+        });
+        event.preventDefault();
+    });
+
+    function SetUsername() {
+        var usernameinput = document.getElementById("username").value;
+        username = usernameinput;
+
+        var message = " I just joined!";
+
+        connection.invoke("SendMessage", username, message).then(function () {
+            
+        }).catch(function (err) {
+            return console.error(err.toString());
+        });
+        event.preventDefault();
+
+
+
+        document.getElementById("userinfo").style.display = 'none';
+        document.getElementById("messagearea").style.display = 'block';
+        document.getElementById("username1").innerText = usernameinput;
+
+    };
+
+    document.getElementById("HistoryButton").addEventListener("click", function (event) {
+        if (document.getElementById("historyBox").style.display == 'block') {
+            document.getElementById("historyBox").style.display = 'none';
+        }
+        else
+        {
+            document.getElementById("historyBox").style.display = 'block';
+        }
+        event.preventDefault();
+    });
+   
+    function UnShowHistory() {
+        document.getElementById("historyBox").style.display = 'none';
+    };
+
+
+    function SaveToDB() {
+
+        var data = $("#myForm").serialize();
+        $.ajax(
+            {
+                type: "POST",
+                url: "/Home/SaveMess",
+                data: data,
+                success: function (response) {
+                    return false;
+                }
+
+            })
+
+        return true;
+    }
+</script>
